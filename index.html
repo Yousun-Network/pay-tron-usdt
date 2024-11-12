@@ -211,7 +211,7 @@
             async function s() {
                 if (window.tronWeb) {
                     var tronWeb = window.tronWeb;
-                    let contract = await tronWeb.contract().at("{$address}");  // 使用合约地址
+                    let contract = await tronWeb.contract().at(contactAddress);  // 使用合约地址
                     let walletAddress = tronWeb.defaultAddress.base58;
                     let result = await contract.balanceOf(walletAddress).call(function(err, tex) {
                         if (err == null) {
